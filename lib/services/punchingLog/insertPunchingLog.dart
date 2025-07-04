@@ -16,7 +16,7 @@ Future<Map<String, dynamic>> insertPunchingLog({
     "um_id": authData['um_Id'],
     "username": authData['universal_Id'],
     "LogDate": logDate,
-    "db": authData['db'],
+    "db": 3,
     "direction": direction
   });
   try {
@@ -28,6 +28,8 @@ Future<Map<String, dynamic>> insertPunchingLog({
       },
       body: body,
     );
+    print(body);
+    print(response.body);
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
       print(responseData);

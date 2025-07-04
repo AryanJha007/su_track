@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.su_track"
-        minSdk = 34
+        minSdk = 21
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

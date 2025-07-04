@@ -21,6 +21,7 @@ Future<void> updateGeolocation(String latitude, String longitude) async {
       },
       body: body,
     );
+    print(authData['um_Id'] );
     if (response.statusCode == 200) {
       print(DateTime.now().toString());
     } else {

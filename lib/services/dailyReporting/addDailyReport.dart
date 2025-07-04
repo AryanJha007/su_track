@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
@@ -32,7 +34,6 @@ Future<void> submitDailyReport({
 
   request.headers.addAll({
     'Authorization': 'Bearer ${authData['token']}',
-    'Content-Type': 'multipart/form-data',
   });
 
   request.fields['um_id'] = authData['um_Id'];
@@ -44,27 +45,27 @@ Future<void> submitDailyReport({
 
   if (remarks != null) request.fields['remark'] = remarks;
 
-  // Only send vehicle data if work_type_id = 1 and status = 1 or 6
-  final isJourneyStatus = workTypeId == "1" && (status == "1" || status == "6");
-  if (isJourneyStatus) {
+
     if (vehicleType != null) request.fields['vehicle_type_id'] = vehicleType;
     if (vehicleNo != null) request.fields['vehicle_no'] = vehicleNo;
     if (kilometers != null) request.fields['kilometers'] = kilometers;
-  }
 
-  if (file != null && isJourneyStatus) {
-    String? mimeType = lookupMimeType(file.path) ?? 'application/octet-stream';
-    request.files.add(await http.MultipartFile.fromPath(
-      'photo',
-      file.path,
-      contentType: MediaType.parse(mimeType),
-    ));
-  }
+    if (file != null) {
+      final bytes = await file.readAsBytes();
+      final mimeType = lookupMimeType(file.path) ?? 'image/jpeg';
+      final fileName = file.name;
 
+      request.files.add(http.MultipartFile.fromBytes(
+        'photo',
+        bytes,
+        filename: fileName,
+        contentType: MediaType.parse(mimeType),
+      ));
+    }
+    print(request.fields);
   try {
     var response = await request.send();
     var responseBody = await response.stream.bytesToString();
-
     if (response.statusCode == 200) {
       onSuccess('Report submitted successfully');
       Navigator.pushReplacement(
@@ -77,7 +78,16 @@ Future<void> submitDailyReport({
         SnackBar(content: Text('You are logged out due to duplicate session.')),
       );
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => LoginPage()));
-    } else {
+    }
+    else if (response.statusCode == 400) {
+      final responseJson = jsonDecode(responseBody);
+
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(responseJson['message'] ?? 'Something went wrong')),
+      );
+    }
+    else {
       onError('Failed to submit report: $responseBody');
     }
   } catch (e) {

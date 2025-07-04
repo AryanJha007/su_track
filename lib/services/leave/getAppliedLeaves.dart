@@ -17,7 +17,6 @@ Future<List<Map<String, dynamic>>> fetchAppliedLeaves(BuildContext context, Stri
   final response = await http.get(url, headers: {
     'Authorization': 'Bearer ${authData['token']}',
   });
-  print(response.statusCode);
   if (response.statusCode == 200) {
     final Map<String, dynamic> responseData = jsonDecode(response.body);
 

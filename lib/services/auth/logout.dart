@@ -22,6 +22,7 @@ Future<void> logout(BuildContext context) async {
       'um_id': authData['um_Id'],
     }),
   );
+  print(response.body);
   if (response.statusCode == 200) {
     final responseData = jsonDecode(response.body);
     if (responseData['success'] == true) {

@@ -167,8 +167,8 @@ class _DailyReportingViewState extends State<DailyReportingView> {
               ),
 
             // Vehicle number (if any)
-            if (vehicleNo != null && vehicleNo.toString().isNotEmpty) const SizedBox(height: 4),
-            if (vehicleNo != null && vehicleNo.toString().isNotEmpty)
+            if (vehicleNo != null && vehicleNo != '0' && vehicleNo.toString().trim().isNotEmpty) const SizedBox(height: 4),
+            if (vehicleNo != null && vehicleNo != '0' && vehicleNo.toString().trim().isNotEmpty)
               Row(
                 children: [
                   Icon(Icons.directions_car, color: themeProvider.secondaryTextColor, size: 18),
@@ -180,8 +180,12 @@ class _DailyReportingViewState extends State<DailyReportingView> {
               ),
 
 
-            if (kilometers != null && kilometers.toString().isNotEmpty) const SizedBox(height: 4),
-            if (kilometers != null && kilometers.toString().isNotEmpty)
+            if (kilometers != null &&
+                kilometers.toString().isNotEmpty &&
+                kilometers.toString() != '0') const SizedBox(height: 4),
+            if (kilometers != null &&
+                kilometers.toString().isNotEmpty &&
+                kilometers.toString() != '0')
               Row(
                 children: [
                   Icon(Icons.speed, color: themeProvider.secondaryTextColor, size: 18),

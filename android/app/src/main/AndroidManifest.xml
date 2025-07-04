@@ -19,8 +19,8 @@
         android:label="SU&#10;TRACK"
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="true"
-        android:theme="@style/LaunchTheme">
-
+        android:theme="@style/LaunchTheme"
+        android:requestLegacyExternalStorage="true">
         <!-- Main Activity -->
         <activity
             android:name="com.example.su_track.MainActivity"

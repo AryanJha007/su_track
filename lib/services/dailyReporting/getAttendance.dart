@@ -12,8 +12,8 @@ Future<Map<String, dynamic>> fetchAttendance(String umId, String yearMonth,Build
   final authData = await LoggedIn.getAuthData();
   String username = authData['universal_Id'];
   String db = authData['db'];
-
-  final url = Uri.parse('${constants.baseUrl}/attendence_leave_api/get_user_attendence.php?um_id=$umId&year_month=$yearMonth&username=$username&db=$db');
+  String um = authData['um_Id'];
+  final url = Uri.parse('${constants.baseUrl}/attendence_leave_api/get_user_attendence.php?umid=$um&year_month=$yearMonth&username=$username&db=$db');
 
   final response = await http.get(url, headers: {
     'Authorization': 'Bearer ${authData['token']}',

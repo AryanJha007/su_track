@@ -25,7 +25,6 @@ Future<bool> verifyOtp(String otp, BuildContext context) async {
   if (otpResponse.statusCode == 200) {
     final Map<String, dynamic> otpResponseData = jsonDecode(otpResponse.body);
     if (otpResponseData['success'] == true) {
-      print(otpResponseData['data']);
       constants.um_id = otpResponseData['data']['um_id'];
       constants.username = otpResponseData['data']['username'];
       constants.device_token = otpResponseData['data']['device_token'];

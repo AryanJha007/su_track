@@ -15,6 +15,7 @@ Future<bool> login(String username, String password, BuildContext context) async
       'mobile_token': 'abc123abc123abc123',
     }),
   );
+  print(response.body);
   if (response.statusCode == 200) {
     final Map<String, dynamic> responseData = jsonDecode(response.body);
 

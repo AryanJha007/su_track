@@ -7,6 +7,14 @@ import '../navBar.dart';
 import 'package:provider/provider.dart';
 import 'package:su_track/providers/theme_provider.dart';
 
+// ✅ Excel-related packages with alias
+import 'package:excel/excel.dart' as xls;
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:open_file/open_file.dart';
+
+import 'dart:io';
+
 class attendenceView extends StatefulWidget {
   const attendenceView({super.key});
 
@@ -21,11 +29,7 @@ class _attendenceViewState extends State<attendenceView> {
   String _errorMessage = '';
   bool _isSubmitting = false;
 
-  // Cache styles and decorations
-  static const _tableHeaderStyle = TextStyle(
-    fontWeight: FontWeight.bold,
-  );
-
+  static const _tableHeaderStyle = TextStyle(fontWeight: FontWeight.bold);
   static const _tableCellStyle = TextStyle();
 
   void _getAttendance() async {
@@ -34,16 +38,23 @@ class _attendenceViewState extends State<attendenceView> {
     setState(() {
       _isLoading = true;
       _errorMessage = '';
+      _isSubmitting = true;
     });
 
     try {
       final yearMonth =
           '${selectedMonth!.year}-${selectedMonth!.month.toString().padLeft(2, '0')}';
-      final data = await fetchAttendance(constants.um_id, yearMonth, context);
+      final data =
+      await fetchAttendance(constants.um_id, yearMonth, context);
       _processAttendanceData(data);
     } catch (e) {
       setState(() {
         _errorMessage = 'Failed to load attendance data';
+        _isLoading = false;
+      });
+    } finally {
+      setState(() {
+        _isSubmitting = false;
       });
     }
   }
@@ -64,19 +75,69 @@ class _attendenceViewState extends State<attendenceView> {
     if (!mounted) return;
     setState(() {
       _attendanceDetails =
-          List<Map<String, dynamic>>.from(data['attendance_details']);
+      List<Map<String, dynamic>>.from(data['attendance_details']);
       _isLoading = false;
     });
   }
 
-  @override
-  void dispose() {
-    // Clean up any subscriptions or pending operations
-    super.dispose();
+  Future<void> _exportToExcel() async {
+    final hasDistance = _attendanceDetails.any(
+            (e) => e['distance'] != null && e['distance'].toString() != '0');
+    final hasCost = _attendanceDetails.any(
+            (e) => e['calculated_cost'] != null && e['calculated_cost'].toString() != '0');
+
+    var excel = xls.Excel.createExcel();
+    xls.Sheet sheet = excel['Attendance'];
+
+    List<String> headers = ['Date', 'In Time', 'Out Time', 'Status', 'Remark'];
+    if (hasDistance) headers.add('Distance (KM)');
+    if (hasCost) headers.add('Cost');
+
+    sheet.appendRow(headers);
+
+    for (var row in _attendanceDetails) {
+      List<dynamic> rowData = [
+        row['date'],
+        row['Intime'],
+        row['Outtime'],
+        capitalize(row['status']),
+        capitalize(row['remark']),
+      ];
+      if (hasDistance) rowData.add(row['distance'] ?? 0);
+      if (hasCost) rowData.add(row['calculated_cost'] ?? 0);
+      sheet.appendRow(rowData);
+    }
+
+    // Permissions
+    var storage = await Permission.storage.request();
+    var manageStorage = await Permission.manageExternalStorage.request();
+
+    if (!storage.isGranted && !manageStorage.isGranted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Storage permission denied')));
+      return;
+    }
+
+    // Save to Downloads
+    final dir = Directory('/storage/emulated/0/Download');
+    final filePath = '${dir.path}/attendance_report.xlsx';
+    final file = File(filePath)
+      ..createSync(recursive: true)
+      ..writeAsBytesSync(excel.encode()!);
+
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('Excel exported to $filePath')));
+
+    await OpenFile.open(filePath);
   }
 
-  // Extract table building logic
+
   Widget _buildAttendanceTable(ThemeProvider themeProvider) {
+    final showDistance = _attendanceDetails.any(
+            (e) => e['distance'] != null && e['distance'].toString() != '0');
+    final showCost = _attendanceDetails.any((e) =>
+    e['calculated_cost'] != null && e['calculated_cost'].toString() != '0');
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
@@ -103,37 +164,57 @@ class _attendenceViewState extends State<attendenceView> {
               label: Text('Remark',
                   style: _tableHeaderStyle.copyWith(
                       color: themeProvider.secondaryTextColor))),
+          if (showDistance)
+            DataColumn(
+                label: Text('KM',
+                    style: _tableHeaderStyle.copyWith(
+                        color: themeProvider.secondaryTextColor))),
+          if (showCost)
+            DataColumn(
+                label: Text('Cost',
+                    style: _tableHeaderStyle.copyWith(
+                        color: themeProvider.secondaryTextColor))),
         ],
         rows: _attendanceDetails.map((attendance) {
-          return DataRow(
-            cells: [
-              DataCell(Text(
-                attendance['date'].toString().substring(8),
-                style: _tableCellStyle.copyWith(color: themeProvider.textColor),
-              )),
-              DataCell(Text(
-                attendance['Intime'],
-                style: _tableCellStyle.copyWith(color: themeProvider.textColor),
-              )),
-              DataCell(Text(
-                attendance['Outtime'],
-                style: _tableCellStyle.copyWith(color: themeProvider.textColor),
-              )),
-              DataCell(Text(
-                capitalize(attendance['status']),
-                style: _tableCellStyle.copyWith(color: themeProvider.textColor),
-              )),
-              DataCell(Text(
-                capitalize(attendance['remark']),
-                style: _tableCellStyle.copyWith(color: themeProvider.textColor),
-              )),
-            ],
-          );
+          final cells = <DataCell>[
+            DataCell(Text(
+              attendance['date'].toString().substring(8),
+              style: _tableCellStyle.copyWith(color: themeProvider.textColor),
+            )),
+            DataCell(Text(
+              attendance['Intime'],
+              style: _tableCellStyle.copyWith(color: themeProvider.textColor),
+            )),
+            DataCell(Text(
+              attendance['Outtime'],
+              style: _tableCellStyle.copyWith(color: themeProvider.textColor),
+            )),
+            DataCell(Text(
+              capitalize(attendance['status']),
+              style: _tableCellStyle.copyWith(color: themeProvider.textColor),
+            )),
+            DataCell(Text(
+              capitalize(attendance['remark']),
+              style: _tableCellStyle.copyWith(color: themeProvider.textColor),
+            )),
+          ];
+
+          if (showDistance) {
+            cells.add(DataCell(Text(
+              attendance['distance']?.toStringAsFixed(2) ?? '0.00',
+              style: _tableCellStyle.copyWith(color: themeProvider.textColor),
+            )));
+          }
+
+          if (showCost) {
+            cells.add(DataCell(Text(
+              attendance['calculated_cost']?.toStringAsFixed(2) ?? '0.00',
+              style: _tableCellStyle.copyWith(color: themeProvider.textColor),
+            )));
+          }
+
+          return DataRow(cells: cells);
         }).toList(),
-        horizontalMargin: 16,
-        columnSpacing: 24,
-        headingRowHeight: 56,
-        dataRowHeight: 52,
       ),
     );
   }
@@ -160,20 +241,19 @@ class _attendenceViewState extends State<attendenceView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'View your attendance details',
-                  style: TextStyle(
-                      color: themeProvider.secondaryTextColor, fontSize: 14),
-                ),
+                Text('View your attendance details',
+                    style: TextStyle(
+                        color: themeProvider.secondaryTextColor, fontSize: 14)),
                 const SizedBox(height: 24),
 
-                // Month Selection Row
+                // Month selector
                 Container(
                   padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: themeProvider.cardColor,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: themeProvider.inputBorderColor),
+                    border:
+                    Border.all(color: themeProvider.inputBorderColor),
                   ),
                   child: Row(
                     children: [
@@ -188,27 +268,27 @@ class _attendenceViewState extends State<attendenceView> {
                               builder: (context, child) {
                                 return Theme(
                                   data: ThemeData.dark().copyWith(
-                                      colorScheme: ColorScheme(
-                                          primary: themeProvider.lionColor,
-                                          surface: themeProvider.cardColor,
-                                          onSurface: themeProvider.textColor,
-                                          onPrimary: Colors.black,
-                                          brightness: Brightness.dark,
-                                          secondary: themeProvider.lionColor,
-                                          onSecondary: Colors.black,
-                                          error: themeProvider.errorColor,
-                                          onError: themeProvider.errorColor),
-                                      dialogBackgroundColor:
-                                          themeProvider.backgroundColor,
-                                      highlightColor: themeProvider.lionColor),
+                                    colorScheme: ColorScheme(
+                                      brightness: Brightness.dark,
+                                      primary: themeProvider.lionColor,
+                                      surface: themeProvider.cardColor,
+                                      onSurface: themeProvider.textColor,
+                                      onPrimary: Colors.black,
+                                      secondary: themeProvider.lionColor,
+                                      onSecondary: Colors.black,
+                                      error: themeProvider.errorColor,
+                                      onError: themeProvider.errorColor,
+                                    ),
+                                    dialogBackgroundColor: themeProvider.backgroundColor,
+                                    highlightColor: themeProvider.lionColor,
+                                  ),
                                   child: child!,
                                 );
                               },
                             );
+
                             if (pickedMonth != null) {
-                              setState(() {
-                                selectedMonth = pickedMonth;
-                              });
+                              setState(() => selectedMonth = pickedMonth);
                             }
                           },
                           child: Container(
@@ -242,7 +322,7 @@ class _attendenceViewState extends State<attendenceView> {
                 ),
                 const SizedBox(height: 24),
 
-                // Get Button
+                // Get button
                 SizedBox(
                   height: 50,
                   width: double.infinity,
@@ -251,8 +331,7 @@ class _attendenceViewState extends State<attendenceView> {
                     onPressed: _getAttendance,
                     backgroundColor: themeProvider.primaryColor,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                        borderRadius: BorderRadius.circular(12)),
                     child: Text(
                       'Get Attendance',
                       style: TextStyle(
@@ -264,27 +343,48 @@ class _attendenceViewState extends State<attendenceView> {
                   ),
                 ),
 
-                // Results Section
+                if (_attendanceDetails.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16.0),
+                    child: SizedBox(
+                      height: 50,
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: themeProvider.primaryColor,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: _exportToExcel,
+                        icon: Icon(Icons.download,
+                            color: themeProvider.buttonColor2),
+                        label: Text(
+                          'Export to Excel',
+                          style: TextStyle(
+                              color: themeProvider.buttonColor2,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                const SizedBox(height: 24),
+
                 if (_isLoading)
                   Center(
-                    child: Image.asset(
-                      'assets/images/loading.gif', // Replace with your GIF
-                      height: 70,
-                      width: double.infinity,
-                      color: themeProvider.lionColor,
-                    ),
-                  )
-                else if (_attendanceDetails == null || _attendanceDetails.isEmpty)
-                  Text(
-                    'Attendance Not Found',
-                    style: TextStyle(color: themeProvider.textColor, fontSize: 18, fontWeight: FontWeight.bold),
-                  )
+                      child: CircularProgressIndicator(
+                          color: themeProvider.lionColor))
                 else if (_errorMessage.isNotEmpty)
                   Text(_errorMessage, style: TextStyle(color: Colors.red))
-                else if (_attendanceDetails.isNotEmpty) ...[
-                  const SizedBox(height: 24),
-                  _buildAttendanceTable(themeProvider),
-                ],
+                else if (_attendanceDetails.isEmpty)
+                    Text('Attendance Not Found',
+                        style: TextStyle(
+                            color: themeProvider.textColor,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold))
+                  else
+                    _buildAttendanceTable(themeProvider),
               ],
             ),
           ),

@@ -216,22 +216,19 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     });
 
     try {
-      List<Map<String, dynamic>> categoryData = categories
-          .map((category) {
-        final categoryId = category['category_type_id']!;
-        double amount = 0;
-        double sgst = 0;
-        double cgst = 0;
-        double totalAmount = 0;
+      // Ensure total_amount is up to date before reading values
+      for (var category in categories) {
+        final id = category['category_type_id']!;
+        _calculateTotalAmount(id);
+      }
 
-        try {
-          amount = double.parse(amountControllers[categoryId]?.text.trim() ?? '0');
-          sgst = double.parse(sgstControllers[categoryId]?.text.trim() ?? '0');
-          cgst = double.parse(cgstControllers[categoryId]?.text.trim() ?? '0');
-          totalAmount = amount + sgst + cgst;
-        } catch (e) {
-          // If parsing fails, keep the defaults of 0
-        }
+      List<Map<String, dynamic>> categoryData = categories.map((category) {
+        final categoryId = category['category_type_id']!;
+        final amount = double.tryParse(amountControllers[categoryId]?.text.trim() ?? '0') ?? 0.0;
+        final sgst = double.tryParse(sgstControllers[categoryId]?.text.trim() ?? '0') ?? 0.0;
+        final cgst = double.tryParse(cgstControllers[categoryId]?.text.trim() ?? '0') ?? 0.0;
+
+        final totalAmount = amount + sgst + cgst;
 
         return {
           'category_type_id': int.parse(categoryId),
@@ -241,9 +238,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
           'total_amount': totalAmount,
           'remark': remarkControllers[categoryId]?.text.trim() ?? '',
         };
-      })
-          .where((category) => (category['amount'] as double) > 0)
-          .toList();
+      }).where((category) => (category['amount'] as double) > 0).toList();
 
       await saveExpense(
         context: context,
@@ -273,6 +268,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
       }
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

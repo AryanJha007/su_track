@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:su_track/screens/dailyReporting/dailyReporting.dart';
 import 'package:su_track/screens/expense/expense.dart';
 import 'package:su_track/screens/navBar.dart';
 import 'package:su_track/screens/userScreen/notification.dart';
@@ -32,9 +33,9 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
   bool value1 = constants.punch_status == '1';
   bool _isTogglingPunch = false;
   List<String> welcomeMessages = [
+    'Want to add Daily Report? We got you covered!',
     'Want a leave? We got you covered!',
     'Want to see your attendance? We got you covered!',
-    'Want to apply OD? We got you covered!',
     'Want to see Expenses? We got you covered!'
   ];
 
@@ -418,22 +419,22 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
           opacity: tileVisibility[0] ? 1.0 : 0.0,
           duration: Duration(seconds: 1),
           child: _buildDashboardTile(
-              context, 'Leave Form', Icons.edit,
-                  (context) => const LeaveApplicationScreen()),
+              context, 'Daily Reporting', Icons.edit,
+                  (context) => const DailyReportingScreen()),
         ),
         AnimatedOpacity(
           opacity: tileVisibility[1] ? 1.0 : 0.0,
           duration: Duration(seconds: 1),
           child: _buildDashboardTile(
-              context, 'Attendance', Icons.thumb_up,
-                  (context) => attendenceView()),
+              context, 'Leave Form', Icons.edit,
+                  (context) => const LeaveApplicationScreen()),
         ),
         AnimatedOpacity(
           opacity: tileVisibility[2] ? 1.0 : 0.0,
           duration: Duration(seconds: 1),
           child: _buildDashboardTile(
-              context, 'OD Form', Icons.description,
-                  (context) => const OdApplicationScreen()),
+              context, 'Attendance', Icons.thumb_up,
+                  (context) => attendenceView()),
         ),
         AnimatedOpacity(
           opacity: tileVisibility[3] ? 1.0 : 0.0,
