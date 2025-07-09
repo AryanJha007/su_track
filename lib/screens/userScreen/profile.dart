@@ -419,12 +419,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       return 'PAN must be 10 characters long and formatted';
                                     }
                                     break;
-                                  case 'Adhar No':
-                                    if (value.length != 12 ||
-                                        !RegExp(r'^\d{12}$').hasMatch(value)) {
-                                      return 'Aadhaar must be 12 digits long';
-                                    }
-                                    break;
+                                  // case 'Adhar No':
+                                  //   if (value.length != 12 ||
+                                  //       !RegExp(r'^\d{12}$').hasMatch(value)) {
+                                  //     return 'Aadhaar must be 12 digits long';
+                                  //   }
+                                  //   break;
                                 }
                                 return null;
                               },

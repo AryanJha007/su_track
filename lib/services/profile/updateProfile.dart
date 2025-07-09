@@ -18,6 +18,7 @@ Future<void> updateProfile(Map<String, dynamic> updatedData,BuildContext context
     },
     body: json.encode(updatedData),
   );
+  print(response.body);
   if (response.statusCode == 200) {
     final responseData = jsonDecode(response.body);
     if (responseData['success'] == true) {

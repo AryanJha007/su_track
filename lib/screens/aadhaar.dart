@@ -62,8 +62,8 @@ class _AadhaarPageState extends State<AadhaarPage> {
                         controller: _aadharController,
                         cursorColor: themeProvider.primaryColor,
                         style: TextStyle(color: themeProvider.textColor),
-                        keyboardType: TextInputType.number,
-                        maxLength: 12, // Set the maximum length to 12 digits
+                       // keyboardType: TextInputType.number,
+                      //  maxLength: 12, // Set the maximum length to 12 digits
                         decoration: InputDecoration(
                           hintText: 'Enter Aadhar Number',
                           hintStyle: TextStyle(color: themeProvider.secondaryTextColor),

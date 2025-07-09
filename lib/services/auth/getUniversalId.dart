@@ -22,6 +22,6 @@ Future<void> getUniversalId(
       await LoggedIn.setUniversalId(responseData['data']['emp_id'],responseData['data']['db']);
     }
   } catch (error) {
-    print('Error: $error');
+
   }
 }

@@ -20,6 +20,7 @@ Future<bool> updateAadhaar(String aadhaarNumber,BuildContext context) async {
       'adhar_no': aadhaarNumber,
     }),
   );
+  print(response.body);
   if (response.statusCode == 200) {
     final responseData = jsonDecode(response.body);
     if (responseData['success'] == true) {
